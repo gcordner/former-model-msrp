@@ -44,14 +44,13 @@ class Fm_Msrp_Admin {
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of this plugin.
-	 * @param      string    $version    The version of this plugin.
+	 * @param      string $plugin_name       The name of this plugin.
+	 * @param      string $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
 
 		$this->plugin_name = $plugin_name;
-		$this->version = $version;
-
+		$this->version     = $version;
 	}
 
 	/**
@@ -74,7 +73,6 @@ class Fm_Msrp_Admin {
 		 */
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/fm-msrp-admin.css', array(), $this->version, 'all' );
-
 	}
 
 	/**
@@ -83,21 +81,30 @@ class Fm_Msrp_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Fm_Msrp_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Fm_Msrp_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fm-msrp-admin.js', array( 'jquery' ), $this->version, false );
-
+		wp_enqueue_script(
+			'fm-msrp-admin',
+			plugin_dir_url( __FILE__ ) . 'js/index.js', // eventually from /build.
+			array( 'wp-element', 'wp-components', 'wp-api-fetch' ),
+			FM_MSRP_VERSION,
+			true
+		);
 	}
-
+	/**
+	 * Register the admin menu for the plugin.
+	 *
+	 * @return void
+	 */
+	public function register_admin_menu() {
+		add_menu_page(
+			__( 'FM MSRP', 'fm-msrp' ),
+			__( 'FM MSRP', 'fm-msrp' ),
+			'manage_woocommerce', // phpcs:ignore WordPress.WP.Capabilities.Unknown
+			'fm-msrp',
+			function () {
+				echo '<div id="fm-msrp-settings-root"></div>';
+			},
+			'dashicons-tag', // icon.
+			56 // position (below WooCommerce but above Settings).
+		);
+	}
 }

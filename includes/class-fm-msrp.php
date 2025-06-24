@@ -68,6 +68,10 @@ class Fm_Msrp {
 			add_action( 'woocommerce_single_product_summary', array( $this, 'display_list_price_frontend' ), 8 );
 			add_filter( 'woocommerce_available_variation', array( $this, 'add_list_price_to_variation_data' ), 10, 3 );
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_script' ) );
+		// Admin interface setup.
+		if ( is_admin() ) {
+			$this->load_admin();
+		}
 	}
 
 	/**
@@ -303,5 +307,20 @@ class Fm_Msrp {
 				'numberposts' => -1,
 			)
 		);
+	}
+
+	/**
+	 * Load the admin class for managing the plugin's admin interface.
+	 *
+	 * @return void
+	 */
+	private function load_admin() {
+		require_once plugin_dir_path( __DIR__ ) . '../admin/class-fm-msrp-admin.php';
+
+		$admin = new \Fm_Msrp_Admin( 'fm-msrp', FM_MSRP_VERSION );
+
+		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_styles' ) );
+		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_scripts' ) );
+		add_action( 'admin_menu', array( $admin, 'register_admin_menu' ) );
 	}
 }
