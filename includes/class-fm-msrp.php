@@ -315,9 +315,9 @@ class Fm_Msrp {
 	 * @return void
 	 */
 	private function load_admin() {
-		require_once plugin_dir_path( __DIR__ ) . '../admin/class-fm-msrp-admin.php';
+		require_once dirname( __DIR__ ) . '/admin/class-fm-msrp-admin.php';
 
-		$admin = new \Fm_Msrp_Admin( 'fm-msrp', FM_MSRP_VERSION );
+		$admin = new \FormerModel\MSRP\Fm_Msrp_Admin( 'fm-msrp', FM_MSRP_VERSION );
 
 		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_styles' ) );
 		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_scripts' ) );

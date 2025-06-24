@@ -10,6 +10,8 @@
  * @subpackage Fm_Msrp/admin
  */
 
+namespace FormerModel\MSRP;
+
 /**
  * The admin-specific functionality of the plugin.
  *
