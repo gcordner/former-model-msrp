@@ -85,12 +85,13 @@ class Fm_Msrp_Admin {
 	public function enqueue_scripts() {
 		wp_enqueue_script(
 			'fm-msrp-admin',
-			plugin_dir_url( __FILE__ ) . 'js/index.js', // eventually from /build.
+			plugin_dir_url( __DIR__ ) . 'build/index.js',
 			array( 'wp-element', 'wp-components', 'wp-api-fetch' ),
 			FM_MSRP_VERSION,
 			true
 		);
 	}
+
 	/**
 	 * Register the admin menu for the plugin.
 	 *
