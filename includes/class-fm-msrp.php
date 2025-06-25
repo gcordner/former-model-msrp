@@ -16,6 +16,7 @@ namespace FormerModel\MSRP;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+
 /**
  * The core plugin class.
  *
@@ -30,6 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @subpackage Fm_Msrp/includes
  * @author     Geoff Cordner <geoffcordner@gmail.com>
  */
+
 /**
  * Class Fm_Msrp
  *
@@ -37,7 +39,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-
 class Fm_Msrp {
 
 	/**
@@ -57,17 +58,22 @@ class Fm_Msrp {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
-			// Simple products.
-			add_action( 'woocommerce_product_options_pricing', array( $this, 'add_simple_list_price_field' ) );
-			add_action( 'woocommerce_process_product_meta', array( $this, 'save_simple_list_price_field' ), 10, 1 );
-			// Variable products.
-			add_action( 'woocommerce_product_after_variable_attributes', array( $this, 'add_variation_list_price_field' ), 10, 3 );
-			add_action( 'woocommerce_save_product_variation', array( $this, 'save_variation_list_price_field' ), 10, 2 );
-			add_action( 'woocommerce_process_product_meta_variable', array( $this, 'save_all_variation_list_price_fields' ), 10, 1 );
-			// Add List Price to product variations.
-			add_action( 'woocommerce_single_product_summary', array( $this, 'display_list_price_frontend' ), 8 );
-			add_filter( 'woocommerce_available_variation', array( $this, 'add_list_price_to_variation_data' ), 10, 3 );
-			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_script' ) );
+		// Simple products.
+		add_action( 'woocommerce_product_options_pricing', array( $this, 'add_simple_list_price_field' ) );
+		add_action( 'woocommerce_process_product_meta', array( $this, 'save_simple_list_price_field' ), 10, 1 );
+
+		// Variable products.
+		add_action( 'woocommerce_product_after_variable_attributes', array( $this, 'add_variation_list_price_field' ), 10, 3 );
+		add_action( 'woocommerce_save_product_variation', array( $this, 'save_variation_list_price_field' ), 10, 2 );
+		add_action( 'woocommerce_process_product_meta_variable', array( $this, 'save_all_variation_list_price_fields' ), 10, 1 );
+
+		// Add List Price to product variations.
+		add_action( 'woocommerce_single_product_summary', array( $this, 'display_list_price_frontend' ), 8 );
+		add_filter( 'woocommerce_available_variation', array( $this, 'add_list_price_to_variation_data' ), 10, 3 );
+
+		// Enqueue frontend JS.
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_script' ) );
+
 		// Admin interface setup.
 		if ( is_admin() ) {
 			$this->load_admin();
@@ -82,9 +88,25 @@ class Fm_Msrp {
 	 * @since 1.0.0
 	 */
 	public static function init() {
-		if ( class_exists( 'WooCommerce' ) ) {
-			new self();
+		// Only run if WooCommerce is active.
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return;
 		}
+
+		// 1) Set up all the existing hooks (admin, frontend, metaboxes, etc.)
+		new self();
+
+		// 2) Load REST controller class file so WP can see it on non-admin requests too.
+		require_once plugin_dir_path( __DIR__ ) . '/includes/class-fm-msrp-rest-controller.php';
+
+		// 3) Tell WP to register your REST routes at rest_api_init.
+		add_action(
+			'rest_api_init',
+			function () {
+				$controller = new \FormerModel\MSRP\Fm_Msrp_REST_Controller();
+				$controller->register_routes();
+			}
+		);
 	}
 
 	/**
@@ -98,10 +120,13 @@ class Fm_Msrp {
 		}
 		$this->rendered = true;
 
+		// ← Grab the admin‐defined label, fallback to "List Price".
+		$label = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
+
 		woocommerce_wp_text_input(
 			array(
 				'id'          => '_list_price',
-				'label'       => __( 'List Price', 'fm-msrp' ),
+				'label'       => esc_html( $label ),
 				'description' => __( 'Manufacturer\'s Suggested Retail Price.', 'fm-msrp' ),
 				'desc_tip'    => true,
 				'type'        => 'text',
@@ -119,9 +144,9 @@ class Fm_Msrp {
 	 */
 	public function save_simple_list_price_field( $post_id ) {
 		// Security & capability checks.
-		if ( ! isset( $_POST['woocommerce_meta_nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ||
-			! current_user_can( 'edit_products' )
+		if ( ! isset( $_POST['woocommerce_meta_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' )
+			|| ! current_user_can( 'edit_products' )
 		) {
 			return;
 		}
@@ -148,12 +173,16 @@ class Fm_Msrp {
 	 */
 	public function add_variation_list_price_field( $loop, $variation_data, $variation ) {
 		echo '<div class="form-row form-row-full">'; // force full width row.
+
+		// ← Same dynamic label for each variation.
+		$label = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
+
 		woocommerce_wp_text_input(
 			array(
 				'id'          => "variable_list_price[{$loop}]",
 				'name'        => "variable_list_price[{$loop}]",
 				'value'       => get_post_meta( $variation->ID, '_list_price', true ),
-				'label'       => __( 'List Price', 'fm-msrp' ),
+				'label'       => esc_html( $label ),
 				'description' => __( 'Set the MSRP here. Click the “Update” button at the top of the page to save all variation List Prices.', 'fm-msrp' ),
 				'desc_tip'    => false,
 				'type'        => 'text',
@@ -161,9 +190,9 @@ class Fm_Msrp {
 				'class'       => 'short variation_input',
 			)
 		);
+
 		echo '</div>';
 	}
-
 
 	/**
 	 * Save the List Price for a single variation.
@@ -175,9 +204,9 @@ class Fm_Msrp {
 	 */
 	public function save_variation_list_price_field( $variation_id, $index ) {
 		/* Security & capability checks. */
-		if ( ! isset( $_POST['woocommerce_meta_nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ||
-			! current_user_can( 'edit_products' )
+		if ( ! isset( $_POST['woocommerce_meta_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' )
+			|| ! current_user_can( 'edit_products' )
 		) {
 			return;
 		}
@@ -202,9 +231,9 @@ class Fm_Msrp {
 	 */
 	public function save_all_variation_list_price_fields( $post_id ) {
 		// Security & capability checks.
-		if ( ! isset( $_POST['woocommerce_meta_nonce'] ) ||
-		! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ||
-		! current_user_can( 'edit_products' )
+		if ( ! isset( $_POST['woocommerce_meta_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' )
+			|| ! current_user_can( 'edit_products' )
 		) {
 			return;
 		}
@@ -232,38 +261,38 @@ class Fm_Msrp {
 			}
 		}
 	}
+
 	/**
-	 * Get list price for a product
+	 * Display the List Price on the front end for simple products.
 	 *
-	 * @return void
+	 * @since 1.0.0
 	 */
 	public function display_list_price_frontend() {
 		global $product;
 
-		if ( ! $product instanceof WC_Product ) {
-			return;
-		}
-
-		if ( $product->is_type( 'variable' ) ) {
-			// We'll handle variations below if needed.
+		if ( ! $product instanceof WC_Product || $product->is_type( 'variable' ) ) {
 			return;
 		}
 
 		$list_price = get_post_meta( $product->get_id(), '_list_price', true );
-
-		if ( $list_price ) {
-			echo '<p class="fm-msrp" style="font-size: 1rem; color: #888; margin-bottom: 0;">';
-			echo esc_html__( 'List Price: ', 'fm-msrp' );
-			echo wc_price( $list_price );
-			echo '</p>';
+		if ( ! $list_price ) {
+			return;
 		}
+
+		// ← Dynamic label again
+		$label = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
+
+		echo '<p class="fm-msrp" style="font-size:1rem;color:#888;margin-bottom:0;">';
+		echo esc_html( $label . ': ' );
+		echo wc_price( $list_price );
+		echo '</p>';
 	}
 
 	/**
 	 * Add List Price to variation data for frontend display.
 	 *
-	 * @param array                $data     The variation data array to be filtered.
-	 * @param WC_Product           $product  The parent product object.
+	 * @param array                $data      The variation data array to be filtered.
+	 * @param WC_Product           $product   The parent product object.
 	 * @param WC_Product_Variation $variation The variation product object.
 	 * @return array The filtered variation data array.
 	 */
@@ -286,11 +315,25 @@ class Fm_Msrp {
 				'fm-msrp-js',
 				plugin_dir_url( __FILE__ ) . 'js/fm-msrp-public.js',
 				array( 'jquery' ),
-				'1.0',
+				FM_MSRP_VERSION,
 				true
+			);
+
+			// Pull your saved label (defaulting to “List Price” if empty)
+			$label = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
+
+			// Localize it so your JS can read it
+			wp_localize_script(
+				'fm-msrp-js',
+				'fmMsrpParams',
+				array(
+					'label'           => $label,
+					'currency_symbol' => get_woocommerce_currency_symbol(),
+				)
 			);
 		}
 	}
+
 
 	/**
 	 * Helper to get all variation posts for a variable product.
@@ -314,10 +357,19 @@ class Fm_Msrp {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Load the admin class for managing the plugin's admin interface.
+	 *
+	 * @return void
+	 */
 	private function load_admin() {
+		// 1) Admin UI
 		require_once dirname( __DIR__ ) . '/admin/class-fm-msrp-admin.php';
-		require_once dirname( __DIR__ ) . '/includes/class-fm-msrp-rest-controller.php'; // For REST API support.
 
+		// 2) REST API controller
+		require_once dirname( __DIR__ ) . '/includes/class-fm-msrp-rest-controller.php';
+
+		// 3) Instantiate admin and hook its methods
 		$admin = new \FormerModel\MSRP\Fm_Msrp_Admin( 'fm-msrp', FM_MSRP_VERSION );
 
 		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_styles' ) );
