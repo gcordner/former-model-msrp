@@ -316,6 +316,7 @@ class Fm_Msrp {
 	 */
 	private function load_admin() {
 		require_once dirname( __DIR__ ) . '/admin/class-fm-msrp-admin.php';
+		require_once dirname( __DIR__ ) . '/includes/class-fm-msrp-rest-controller.php'; // For REST API support.
 
 		$admin = new \FormerModel\MSRP\Fm_Msrp_Admin( 'fm-msrp', FM_MSRP_VERSION );
 
