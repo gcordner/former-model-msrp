@@ -41,7 +41,7 @@
 
         if (variation.fm_msrp) {
           const formatted = wc_price_format(variation.fm_msrp);
-          $listPrice.html("List Price: " + formatted).show();
+          $listPrice.html(fmMsrpParams.label + ": " + formatted).show();
         } else {
           $listPrice.hide();
         }
@@ -55,7 +55,9 @@
       if (isNaN(amount)) return value;
 
       return (
-        '<span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">&#36;</span>' +
+        '<span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">' +
+        fmMsrpParams.currency_symbol +
+        "</span>" +
         amount.toFixed(2) +
         "</bdi></span>"
       );

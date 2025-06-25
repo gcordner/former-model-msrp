@@ -267,26 +267,55 @@ class Fm_Msrp {
 	 *
 	 * @since 1.0.0
 	 */
+	// public function display_list_price_frontend() {
+	// global $product;
+
+	// if ( ! $product instanceof WC_Product || $product->is_type( 'variable' ) ) {
+	// return;
+	// }
+
+	// $list_price = get_post_meta( $product->get_id(), '_list_price', true );
+	// if ( ! $list_price ) {
+	// return;
+	// }
+
+	// ← Dynamic label again
+	// $label = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
+
+	// echo '<p class="fm-msrp" style="font-size:1rem;color:#000000;margin-bottom:0;">';
+	// echo esc_html( $label . ': ' );
+	// echo wc_price( $list_price );
+	// echo '</p>';
+
+
+	// }
+
 	public function display_list_price_frontend() {
 		global $product;
 
-		if ( ! $product instanceof WC_Product || $product->is_type( 'variable' ) ) {
+		if ( ! $product instanceof \WC_Product ) {
+			return;
+		}
+
+		if ( $product->is_type( 'variable' ) ) {
 			return;
 		}
 
 		$list_price = get_post_meta( $product->get_id(), '_list_price', true );
-		if ( ! $list_price ) {
-			return;
+
+		if ( $list_price ) {
+			$label = get_option( 'fm_msrp_label', 'List Price' );
+
+			echo '<p class="fm-msrp" style="font-size: 1rem; color: #000000; margin-bottom: 0;">';
+			echo esc_html( $label . ': ' );
+			echo wc_price( $list_price );
+			echo '</p>';
 		}
-
-		// ← Dynamic label again
-		$label = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
-
-		echo '<p class="fm-msrp" style="font-size:1rem;color:#888;margin-bottom:0;">';
-		echo esc_html( $label . ': ' );
-		echo wc_price( $list_price );
-		echo '</p>';
 	}
+
+
+
+
 
 	/**
 	 * Add List Price to variation data for frontend display.
@@ -310,10 +339,10 @@ class Fm_Msrp {
 	 * @return void
 	 */
 	public function enqueue_frontend_script() {
-		if ( is_product() ) {
+		if ( is_singular( 'product' ) ) {
 			wp_enqueue_script(
 				'fm-msrp-js',
-				plugin_dir_url( __FILE__ ) . 'js/fm-msrp-public.js',
+				plugin_dir_url( __DIR__ ) . 'public/js/fm-msrp-public.js',
 				array( 'jquery' ),
 				FM_MSRP_VERSION,
 				true
