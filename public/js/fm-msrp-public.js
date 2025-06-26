@@ -30,9 +30,7 @@
 
   // DOM Ready
   $(function () {
-    const $listPrice = $(
-      '<p class="fm-msrp" style="font-size: 1rem; color: #888;"></p>'
-    );
+    const $listPrice = $('<p class="fm-msrp"></p>');
     $(".single_variation_wrap").prepend($listPrice);
 
     $("form.variations_form")

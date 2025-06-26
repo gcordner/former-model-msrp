@@ -53,10 +53,15 @@ class Fm_Msrp_REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'update_settings' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
 					'args'                => array(
-						'label' => array(
+						'label'      => array(
 							'type'              => 'string',
-							'required'          => true,
+							'required'          => false,
 							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'custom_css' => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'wp_kses_post',
 						),
 					),
 				),
@@ -89,10 +94,12 @@ class Fm_Msrp_REST_Controller extends WP_REST_Controller {
 	 */
 	public function get_settings( $request ) {
 		$label = get_option( 'fm_msrp_label', 'List Price' );
+		$css   = get_option( 'fm_msrp_custom_css', '' );
 
 		return rest_ensure_response(
 			array(
-				'label' => $label,
+				'label'      => $label,
+				'custom_css' => $css,
 			)
 		);
 	}
@@ -105,12 +112,20 @@ class Fm_Msrp_REST_Controller extends WP_REST_Controller {
 	 */
 	public function update_settings( $request ) {
 		$label = $request->get_param( 'label' );
+		$css   = $request->get_param( 'custom_css' );
 
-		update_option( 'fm_msrp_label', $label );
+		if ( isset( $label ) ) {
+			update_option( 'fm_msrp_label', $label );
+		}
+
+		if ( isset( $css ) ) {
+			update_option( 'fm_msrp_custom_css', $css );
+		}
 
 		return rest_ensure_response(
 			array(
-				'label' => $label,
+				'label'      => $label,
+				'custom_css' => $css,
 			)
 		);
 	}

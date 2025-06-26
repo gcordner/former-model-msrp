@@ -74,6 +74,9 @@ class Fm_Msrp {
 		// Enqueue frontend JS.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_script' ) );
 
+		// Output custom CSS for List Price.
+		add_action( 'wp_head', array( $this, 'output_custom_css' ) );
+
 		// Admin interface setup.
 		if ( is_admin() ) {
 			$this->load_admin();
@@ -306,10 +309,44 @@ class Fm_Msrp {
 		if ( $list_price ) {
 			$label = get_option( 'fm_msrp_label', 'List Price' );
 
-			echo '<p class="fm-msrp" style="font-size: 1rem; color: #000000; margin-bottom: 0;">';
+			echo '<p class="fm-msrp">';
 			echo esc_html( $label . ': ' );
 			echo wc_price( $list_price );
 			echo '</p>';
+		}
+		if ( $product->is_type( 'variable' ) ) {
+			$default_attributes   = $product->get_default_attributes();
+			$available_variations = $product->get_available_variations();
+			$variation_id         = null;
+
+			foreach ( $available_variations as $variation ) {
+				$match = true;
+
+				foreach ( $default_attributes as $key => $value ) {
+					if ( $variation['attributes'][ 'attribute_' . $key ] !== $value ) {
+						$match = false;
+						break;
+					}
+				}
+
+				if ( $match ) {
+					$variation_id = $variation['variation_id'];
+					break;
+				}
+			}
+
+			if ( $variation_id ) {
+				$list_price = get_post_meta( $variation_id, '_list_price', true );
+
+				if ( $list_price ) {
+					$label = get_option( 'fm_msrp_label', 'List Price' );
+
+					echo '<p class="fm-msrp">';
+					echo esc_html( $label . ': ' );
+					echo wc_price( $list_price );
+					echo '</p>';
+				}
+			}
 		}
 	}
 
@@ -404,5 +441,24 @@ class Fm_Msrp {
 		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_styles' ) );
 		add_action( 'admin_enqueue_scripts', array( $admin, 'enqueue_scripts' ) );
 		add_action( 'admin_menu', array( $admin, 'register_admin_menu' ) );
+	}
+
+	/**
+	 * Output custom CSS scoped to .fm-msrp.
+	 *
+	 * @since 1.0.0
+	 */
+	public function output_custom_css() {
+		if ( is_product() ) {
+			$raw_css = get_option( 'fm_msrp_custom_css', '' );
+
+			if ( ! empty( $raw_css ) ) {
+				$clean_css = wp_strip_all_tags( $raw_css );
+
+				echo '<style id="fm-msrp-custom-css">';
+				echo '.fm-msrp { ' . $clean_css . ' }';
+				echo '</style>';
+			}
+		}
 	}
 }
