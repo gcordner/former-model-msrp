@@ -68,7 +68,7 @@ class Fm_Msrp {
 		add_action( 'woocommerce_process_product_meta_variable', array( $this, 'save_all_variation_list_price_fields' ), 10, 1 );
 
 		// Add List Price to product variations.
-		add_action( 'woocommerce_single_product_summary', array( $this, 'display_list_price_frontend' ), 8 );
+		add_action( 'woocommerce_single_product_summary', array( $this, 'output_msrp_above_price' ), 9 );
 		add_filter( 'woocommerce_available_variation', array( $this, 'add_list_price_to_variation_data' ), 10, 3 );
 
 		// Enqueue frontend JS.
@@ -459,6 +459,27 @@ class Fm_Msrp {
 				echo '.fm-msrp { ' . $clean_css . ' }';
 				echo '</style>';
 			}
+		}
+	}
+
+	public function output_msrp_above_price() {
+		global $product;
+
+		if ( ! $product instanceof \WC_Product ) {
+			return;
+		}
+
+		// Simple product only
+		if ( ! $product->is_type( 'variable' ) ) {
+			$msrp = get_post_meta( $product->get_id(), '_list_price', true );
+			if ( ! $msrp ) {
+				return;
+			}
+
+			$label     = get_option( 'fm_msrp_label', __( 'List Price', 'fm-msrp' ) );
+			$formatted = wc_price( $msrp );
+
+			echo '<p class="fm-msrp">' . esc_html( $label ) . ': ' . $formatted . '</p>';
 		}
 	}
 }
