@@ -68,7 +68,11 @@ class Fm_Msrp {
 		add_action( 'woocommerce_process_product_meta_variable', array( $this, 'save_all_variation_list_price_fields' ), 10, 1 );
 
 		// Add List Price to product variations.
-		add_action( 'woocommerce_single_product_summary', array( $this, 'output_msrp_above_price' ), 9 );
+		if ( $this->is_astra() ) {
+			add_action( 'astra_woo_single_price_before', array( $this, 'output_msrp_above_price' ), 15 );
+		} else {
+			add_action( 'woocommerce_single_product_summary', array( $this, 'output_msrp_above_price' ), 9 );
+		}
 		add_filter( 'woocommerce_available_variation', array( $this, 'add_list_price_to_variation_data' ), 10, 3 );
 
 		// Enqueue frontend JS.
@@ -111,6 +115,15 @@ class Fm_Msrp {
 			}
 		);
 	}
+	/**
+	 * Detect if current theme is Astra or a child of Astra.
+	 *
+	 * @return bool
+	 */
+	private function is_astra() {
+		return function_exists( 'astra_setup' ) || get_template() === 'astra';
+	}
+
 
 	/**
 	 * Add the List Price field to simple products.
